@@ -1,0 +1,91 @@
+
+[project]
+name = "memepool"
+description = ""
+authors = []
+telemetry = true
+cache_dir = "./.cache"
+
+# [contracts.counter]
+# path = "contracts/counter.clar"
+
+[repl.analysis]
+passes = ["check_checker"]
+check_checker = { trusted_sender = false, trusted_caller = false, callee_filter = false }
+
+# Check-checker settings:
+# trusted_sender: if true, inputs are trusted after tx_sender has been checked.
+# trusted_caller: if true, inputs are trusted after contract-caller has been checked.
+# callee_filter: if true, untrusted data may be passed into a private function without a
+# warning, if it gets checked inside. This check will also propagate up to the
+# caller.
+# More informations: https://www.hiro.so/blog/new-safety-checks-in-clarinet
+
+# Contracts
+[contracts.pool]
+path = "contracts/pool.clar"
+clarity_version = 2
+epoch = "2.1"
+
+[contracts.vault]
+path = "contracts/vault.clar"
+clarity_version = 2
+epoch = "2.1"
+
+[contracts.utils]
+path = "contracts/utils.clar"
+clarity_version = 2
+epoch = "2.1"
+
+# Traits
+[contracts.trait-sip-010]
+path = "contracts/traits/trait-sip-010.clar"
+clarity_version = 2
+epoch = "2.1"
+
+[contracts.trait-ownable]
+path = "contracts/traits/trait-ownable.clar"
+clarity_version = 2
+epoch = "2.1"
+
+[contracts.trait-m-token]
+path = "contracts/traits/trait-m-token.clar"
+clarity_version = 2
+epoch = "2.1"
+
+# Tokens
+[contracts.sbtc]
+path = "contracts/tokens/sbtc.clar"
+clarity_version = 2
+epoch = "2.1"
+depends_on = [ "trait-ownable", "trait-sip-010" ]
+
+[contracts.variable-sbtc-debt-token]
+path = "contracts/tokens/variable-sbtc-debt-token.clar"
+clarity_version = 2
+epoch = "2.1"
+depends_on = [ "trait-ownable", "trait-m-token" ]
+
+[contracts.sbtc-m-token]
+path = "contracts/tokens/sbtc-m-token.clar"
+clarity_version = 2
+epoch = "2.1"
+depends_on = [ "trait-ownable", "trait-sip-010", "trait-m-token" ]
+
+[contracts.wusd]
+path = "contracts/tokens/wusd.clar"
+clarity_version = 2
+epoch = "2.1"
+depends_on = [ "trait-ownable", "trait-sip-010" ]
+
+[contracts.variable-wusd-debt-token]
+path = "contracts/tokens/variable-wusd-debt-token.clar"
+clarity_version = 2
+epoch = "2.1"
+depends_on = [ "trait-ownable", "trait-m-token" ]
+
+[contracts.wusd-m-token]
+path = "contracts/tokens/wusd-m-token.clar"
+clarity_version = 2
+epoch = "2.1"
+depends_on = [ "trait-ownable", "trait-sip-010", "trait-m-token" ]
