@@ -1,5 +1,17 @@
 # MemePool
 
+## Why is this project being archived?
+No VCs was a strong requirement for me. The primary reason for archiving MemePool is the lack of initial funding to safeguard user assets against potential bad debt scenarios.
+### Risk Example:
+Consider a situation where a memecoin's value plummets by 70% within a single day—not an unprecedented event. If such a sharp decline occurs too rapidly for liquidators to intervene while preserving their own funds, the protocol would be left holding the devalued memecoin, resulting in "bad debt".
+In this scenario:
+
+Borrowers who used the memecoin as collateral to borrow stablecoins would be in a net positive position and have no incentive to close their positions.
+Consequently, the lenders of those stablecoins would incur significant losses.
+
+Without substantial initial capital to mitigate such risks, proceeding with the project would expose lenders to unacceptable levels of financial loss.
+
+## INTRO
 Contracts that handle *liquid* borrowing and lending any sip-10 token, but focusing on memecoins.  
 - The `pool.clar` contract serves as the main entrypoint & contains all the public functions needed to interact with the platform. 
 - The `vault.clar` contains the reserve and user configurations, including the interest rates, liquidation thresholds etc ...

@@ -1,5 +1,5 @@
 (impl-trait .trait-ownable.ownable-trait)
-(impl-trait .trait-m-token.m-token-trait)
+(impl-trait .trait-variable-debt-token.variable-debt-token-trait)
 
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
 
@@ -16,21 +16,6 @@
 (define-constant ERR-NON-TRANSFERABLE-TOKEN (err u1005))
 (define-constant ERR-NO-TREASURY-SET (err u1006))
 (define-constant ERR-USER-NOT-FOUND (err u1007))
-
-;; non-transferable token
-(define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
-  ERR-NON-TRANSFERABLE-TOKEN
-)
-(define-public (transfer-underlying-token (amount uint) (recipient principal) (asset-trait <ft-trait>)) 
-  ERR-NON-TRANSFERABLE-TOKEN
-)
-(define-read-only (get-treasury)
-  ERR-NO-TREASURY-SET
-)
-(define-public (liquidate-m-token  (amount uint) (sender principal) (recipient principal)) 
-  ERR-NON-TRANSFERABLE-TOKEN
-)
-
 
 (define-fungible-token variable-wusd-debt-token)
 
@@ -50,7 +35,8 @@
 )
 
 (define-private (check-is-approved (sender principal))
-  (ok (asserts! (or (default-to false (map-get? approved-contracts sender)) (is-eq sender (var-get contract-owner))) ERR-NOT-AUTHORIZED))
+  (begin (asserts! (or (default-to false (map-get? approved-contracts sender)) (is-eq sender (var-get contract-owner))) ERR-NOT-AUTHORIZED)
+  (ok true))
 )
 
 (define-public (add-approved-contract (new-approved-contract principal))
@@ -80,13 +66,14 @@
 ;; now, after interest accrued, the balance of the user would reflect the increase in index relative to the time of deposit: amount-scaled * index
 (define-map user-state { user: principal } { last-index: uint })
 
-(define-data-var normalized-income uint UNIT)
+;; Have a data-var hold the normalized debt or income, the other way to do it is to call the reserve-data contract and need to thus pass the trait to the get-balance and get-total-supply functions but that might cause issues with wallets as its no longer sip-10.
+(define-data-var normalized-debt uint UNIT)
 
-(define-read-only (get-normalized-income) (var-get normalized-income))
+(define-read-only (get-normalized-debt) (var-get normalized-debt))
 
-(define-public (set-normalized-income (index uint)) 
+(define-public (set-normalized-debt (index uint)) 
   (begin (try! (check-is-approved tx-sender))
-        (ok (var-set normalized-income index))
+        (ok (var-set normalized-debt index))
 ))
 
 (define-public (burn-scaled (amount uint) (who principal) (liquidity-index uint)) 
@@ -94,10 +81,10 @@
     (try! (check-is-approved tx-sender))
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     (asserts! (> liquidity-index u0) ERR-INVALID-LIQUIDITY-INDEX)
-    (let ((amount-scaled (div-unit-down amount liquidity-index)))
+    (let ((amount-scaled (div-unit-up amount liquidity-index))
+          (balance-scaled (get-scaled-balance who)))
       (map-set user-state {user: who} {last-index: liquidity-index})
-      ;; TODO aave prints some events here
-      (print {FUNCTION:"burn-scaled", amount-scaled:amount-scaled, amount:amount, liquidity-index:liquidity-index})
+      (print {FUNCTION:"burn-scaled", balance-scaled: balance-scaled, amount-scaled:amount-scaled, amount:amount, liquidity-index:liquidity-index,  scaled-bal:(get-scaled-balance who), bal:(get-balance who), normalized-debt:(var-get normalized-debt)})
       (try! (ft-burn? variable-wusd-debt-token amount-scaled who))
       (ok true)
 )))
@@ -107,11 +94,12 @@
     (try! (check-is-approved tx-sender))
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     (asserts! (> liquidity-index u0) ERR-INVALID-LIQUIDITY-INDEX)
-    (let ((amount-scaled (div-unit-down amount liquidity-index)))
+    (let ((amount-scaled (div-unit-up amount liquidity-index))
+          (is-first-borrow (is-eq (ft-get-balance variable-wusd-debt-token who))))
       (map-set user-state {user: who} {last-index: liquidity-index})
-      (print {Function: "variable-debt-token-mint-scaled", amount-scaled: amount-scaled, liquidity-index:liquidity-index, amount:amount})
+      (print {Function: "variable-debt-token-mint-scaled", amount-scaled: amount-scaled, liquidity-index:liquidity-index, amount:amount, bal:(get-scaled-balance who)})
       (try! (ft-mint? variable-wusd-debt-token amount-scaled who))
-      (ok true)
+      (ok is-first-borrow)
 )))
 
 (define-public (get-scaled-balance (who principal))
@@ -130,7 +118,7 @@
 ;; @desc get-total-supply
 ;; @returns (response uint)
 (define-read-only (get-total-supply)
-  (ok (mul-unit (ft-get-supply variable-wusd-debt-token) (var-get normalized-income)))
+  (ok (mul-unit (ft-get-supply variable-wusd-debt-token) (get-normalized-debt)))
 )
 
 ;; @desc get-balance
@@ -138,7 +126,7 @@
 ;; @params who
 ;; @returns (response uint)
 (define-read-only (get-balance (account principal))
-  (ok (mul-unit (ft-get-balance variable-wusd-debt-token account) (var-get normalized-income)))
+  (ok (mul-unit (ft-get-balance variable-wusd-debt-token account) (get-normalized-debt)))
 )
 
 ;; @desc get-name
@@ -199,9 +187,9 @@
 
 ;; TODO VIP make sure you're only using mul-unit and mul-unit when ray multiplactions are needed
 ;; TODO2 do i need to create similar operations for ray div? the math doesnt need it as 1.1/2.2 = 110000/220000 but it cant be said for multiplications
-(define-private (div-unit-down (a uint) (b uint)) 
-	(/ (* a UNIT) b) 
-)
+;; (define-private (div-unit-up (a uint) (b uint)) 
+;; 	(/ (* a UNIT) b) 
+;; )
 
 (define-private (div-unit-up (a uint) (b uint)) 
 	(ceil-div (* a UNIT) b) 

@@ -27,8 +27,8 @@ path = "contracts/pool.clar"
 clarity_version = 2
 epoch = "2.1"
 
-[contracts.vault]
-path = "contracts/vault.clar"
+[contracts.reserve-data]
+path = "contracts/reserve-data.clar"
 clarity_version = 2
 epoch = "2.1"
 
@@ -50,6 +50,11 @@ epoch = "2.1"
 
 [contracts.trait-m-token]
 path = "contracts/traits/trait-m-token.clar"
+clarity_version = 2
+epoch = "2.1"
+
+[contracts.trait-variable-debt-token]
+path = "contracts/traits/trait-variable-debt-token.clar"
 clarity_version = 2
 epoch = "2.1"
 

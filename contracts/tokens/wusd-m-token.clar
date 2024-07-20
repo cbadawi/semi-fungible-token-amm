@@ -92,7 +92,7 @@
     (try! (check-is-approved tx-sender))
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     (asserts! (> liquidity-index u0) ERR-INVALID-LIQUIDITY-INDEX)
-    (let ((amount-scaled (div-unit-down amount liquidity-index)))
+    (let ((amount-scaled (div-unit-up amount liquidity-index)))
       (map-set user-state {user: who} {last-index: liquidity-index})
       ;; TODO aave prints some events here
       (print {FUNCTION:"burn-scaled", amount-scaled:amount-scaled, amount:amount, liquidity-index:liquidity-index})
@@ -105,7 +105,7 @@
     (try! (check-is-approved tx-sender))
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     (asserts! (> liquidity-index u0) ERR-INVALID-LIQUIDITY-INDEX)
-    (let ((amount-scaled (div-unit-down amount liquidity-index)))
+    (let ((amount-scaled (div-unit-up amount liquidity-index)))
       (map-set user-state {user: who} {last-index: liquidity-index})
       (print {Function: "variable-debt-token-mint-scaled", amount-scaled: amount-scaled, liquidity-index:liquidity-index, amount:amount})
       (try! (ft-mint? wusd-m-token amount-scaled who))

@@ -1,5 +1,5 @@
 (impl-trait .trait-ownable.ownable-trait)
-(impl-trait .trait-m-token.m-token-trait)
+(impl-trait .trait-variable-debt-token.variable-debt-token-trait)
 
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
 
@@ -76,13 +76,13 @@
 ;; now, after interest accrued, the balance of the user would reflect the increase in index relative to the time of deposit: amount-scaled * index
 (define-map user-state { user: principal } { last-index: uint })
 
-(define-data-var normalized-income uint UNIT)
+(define-data-var normalized-debt uint UNIT)
 
-(define-read-only (get-normalized-income) (var-get normalized-income))
+(define-read-only (get-normalized-debt) (var-get normalized-debt))
 
-(define-public (set-normalized-income (index uint)) 
+(define-public (set-normalized-debt (index uint)) 
   (begin (try! (check-is-approved tx-sender))
-        (ok (var-set normalized-income index))
+        (ok (var-set normalized-debt index))
 ))
 
 (define-public (burn-scaled (amount uint) (who principal) (liquidity-index uint)) 
@@ -90,7 +90,7 @@
     (try! (check-is-approved tx-sender))
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     (asserts! (> liquidity-index u0) ERR-INVALID-LIQUIDITY-INDEX)
-    (let ((amount-scaled (div-unit-down amount liquidity-index)))
+    (let ((amount-scaled (div-unit-up amount liquidity-index)))
       (map-set user-state {user: who} {last-index: liquidity-index})
       ;; TODO aave prints some events here
       (print {FUNCTION:"burn-scaled", amount-scaled:amount-scaled, amount:amount, liquidity-index:liquidity-index})
@@ -103,11 +103,12 @@
     (try! (check-is-approved tx-sender))
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     (asserts! (> liquidity-index u0) ERR-INVALID-LIQUIDITY-INDEX)
-    (let ((amount-scaled (div-unit-down amount liquidity-index)))
+    (let ((amount-scaled (div-unit-up amount liquidity-index))
+          (is-first-borrow (is-eq (ft-get-balance variable-sbtc-debt-token who))))
       (map-set user-state {user: who} {last-index: liquidity-index})
       (print {Function: "variable-debt-token-mint-scaled", amount-scaled: amount-scaled, liquidity-index:liquidity-index, amount:amount})
       (try! (ft-mint? variable-sbtc-debt-token amount-scaled who))
-      (ok true)
+      (ok is-first-borrow)
 )))
 
 (define-public (get-scaled-balance (account principal))
@@ -124,7 +125,7 @@
 ;; @desc get-total-supply
 ;; @returns (response uint)
 (define-read-only (get-total-supply)
-  (ok (mul-unit (ft-get-supply variable-sbtc-debt-token) (var-get normalized-income)))
+  (ok (mul-unit (ft-get-supply variable-sbtc-debt-token) (var-get normalized-debt)))
 )
 
 ;; @desc get-balance
@@ -132,7 +133,7 @@
 ;; @params who
 ;; @returns (response uint)
 (define-read-only (get-balance (account principal))
-  (ok (mul-unit (ft-get-balance variable-sbtc-debt-token account) (var-get normalized-income)))
+  (ok (mul-unit (ft-get-balance variable-sbtc-debt-token account) (var-get normalized-debt)))
 )
 
 ;; @desc get-name

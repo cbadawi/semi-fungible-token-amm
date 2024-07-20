@@ -79,6 +79,7 @@
 ;; now, after interest accrued, the balance of the user would reflect the increase in index relative to the time of deposit: amount-scaled * index
 (define-map user-state { user: principal } { last-index: uint })
 
+;; todo vip this needs a better more robust solution. I cant keep changing the index
 (define-data-var normalized-income uint UNIT)
 
 (define-read-only (get-normalized-income) (var-get normalized-income))
@@ -93,9 +94,8 @@
     (try! (check-is-approved tx-sender))
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     (asserts! (> liquidity-index u0) ERR-INVALID-LIQUIDITY-INDEX)
-    (let ((amount-scaled (div-unit-down amount liquidity-index)))
+    (let ((amount-scaled (div-unit-up amount liquidity-index)))
       (map-set user-state {user: who} {last-index: liquidity-index})
-      ;; TODO aave prints some events here
       (print {FUNCTION:"burn-scaled", amount-scaled:amount-scaled, amount:amount, liquidity-index:liquidity-index})
       (try! (ft-burn? sbtc-m-token amount-scaled who))
       (ok true)
@@ -106,7 +106,7 @@
     (try! (check-is-approved tx-sender))
     (asserts! (> amount u0) ERR-INVALID-AMOUNT)
     (asserts! (> liquidity-index u0) ERR-INVALID-LIQUIDITY-INDEX)
-    (let ((amount-scaled (div-unit-down amount liquidity-index)))
+    (let ((amount-scaled (div-unit-up amount liquidity-index)))
       (map-set user-state {user: who} {last-index: liquidity-index})
       (print {Function: "sbtc-m-token-mint-scaled", amount-scaled: amount-scaled, liquidity-index:liquidity-index, amount:amount})
       (try! (ft-mint? sbtc-m-token amount-scaled who))
@@ -239,9 +239,9 @@
 ;; all percebtages should be expressed as this unit
 (define-constant PERCENTAGE_FACTOR u10000) ;; 100% is 10000 
 
-(define-private (div-unit-down (a uint) (b uint)) 
-	(/ (* a UNIT) b) 
-)
+;; (define-private (div-unit-up (a uint) (b uint)) 
+;; 	(/ (* a UNIT) b) 
+;; )
 
 (define-private (div-unit-up (a uint) (b uint)) 
 	(ceil-div (* a UNIT) b) 

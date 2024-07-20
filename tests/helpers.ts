@@ -36,8 +36,10 @@ export const ERR_COLLATERAL_TOO_LOW = 2016;
 export const ERR_HEALTH_FACTOR_NOT_BELOW_THRESHOLD = 2017;
 export const ERR_NO_DEBT_FOUND = 2018;
 
+export const UNIT = 10**18;
+
 export const prettyEvents = (events: any, functionName='') => {
-  console.log({ rawEvents: events })
+  // console.log({ rawEvents: events })
   return events.filter(
     (e:any) => {
       if(!functionName) return true
@@ -69,7 +71,6 @@ export const address2 = accounts.get("wallet_2")! // ST2CY5V39NHDPWSXMW9QDT3HC3G
 export const address3 = accounts.get("wallet_3")! 
 
 export const utilsContract = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.utils"
-export const vaultContract = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.vault"
 
 
 export const contractDeployer = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM"
@@ -94,6 +95,8 @@ export const wUsdSupplyCap = Cl.uint(600_000)
 
 export const poolName = "pool"
 export const poolContract = contractDeployer + "." + poolName
+export const reserveName = "reserve-data"
+export const reserveContract = contractDeployer + "." + reserveName
 export const PERCENTAGE_FACTOR = 10000
 
 
@@ -112,9 +115,10 @@ export const beforeSBTCSupply = ()=> {
 			[Cl.principal(poolContract)],
 			contractDeployer
 		)
+		console.log("!!!!! called beforeSBTCSupply ", sbtcContract)
 
 		simnet.callPublicFn(
-      poolContract,
+      reserveContract,
 			"init-reserve",
 			[
 				Cl.principal(sbtcContract), 
@@ -127,7 +131,7 @@ export const beforeSBTCSupply = ()=> {
 		)
 
 		simnet.callPublicFn(
-			poolContract,
+			reserveContract,
 			"set-configuration",
 			[
 				Cl.principal(sbtcContract),
@@ -143,7 +147,9 @@ export const beforeSBTCSupply = ()=> {
 					"reserve-factor": Cl.uint(0.15*PERCENTAGE_FACTOR),
 					"borrow-cap": sBtcBorrowCap,
 					"supply-cap": sBtcSupplyCap,
-					"liquidation-fee": Cl.uint(0.1*PERCENTAGE_FACTOR)
+					"liquidation-fee": Cl.uint(0.1*PERCENTAGE_FACTOR),
+					"borrowable-in-isolation": Cl.bool(true),
+					"debt-ceiling": Cl.uint(0),
 				}),
 			],
 			contractDeployer
@@ -170,7 +176,7 @@ export const beforeSBTCSupply = ()=> {
 			contractDeployer
 		)
 		simnet.callPublicFn(
-      poolContract,
+      reserveContract,
 			"init-reserve",
 			[
 				Cl.principal(wUsdContract), 
@@ -183,7 +189,7 @@ export const beforeSBTCSupply = ()=> {
 		)
 
 		simnet.callPublicFn(
-			poolContract,
+			reserveContract,
 			"set-configuration",
 			[
 				Cl.principal(wUsdContract),
@@ -199,7 +205,9 @@ export const beforeSBTCSupply = ()=> {
 					"reserve-factor": Cl.uint(0.15*PERCENTAGE_FACTOR),
 					"borrow-cap": wUsdBorrowCap,
 					"supply-cap": wUsdSupplyCap,
-					"liquidation-fee": Cl.uint(0.1*PERCENTAGE_FACTOR)
+					"liquidation-fee": Cl.uint(0.1*PERCENTAGE_FACTOR),
+					"borrowable-in-isolation": Cl.bool(true),
+					"debt-ceiling": Cl.uint(0)
 				}),
 			],
 			contractDeployer
@@ -262,8 +270,8 @@ export const supply = (contract:string, amount:UIntCV, variableDebtContract:stri
 }
 
 export const initReserveAndConfig = (contract:string, cTokenContract:string, variableDebtContract:string, borrowCap:UIntCV, supplyCap:UIntCV)=> {
-	simnet.callPublicFn(
-		vaultContract,
+	const initReserveResp = simnet.callPublicFn(
+		reserveContract,
 		"init-reserve",
 		[
 			Cl.principal(contract), 
@@ -274,9 +282,10 @@ export const initReserveAndConfig = (contract:string, cTokenContract:string, var
 		],
 		contractDeployer
 	)
+	console.log("!!!!! called initReserveAndConfig ", contract, Cl.prettyPrint(initReserveResp.result))
 
 	simnet.callPublicFn(
-		vaultContract,
+		reserveContract,
 		"set-configuration",
 		[
 			Cl.principal(contract),
@@ -292,7 +301,9 @@ export const initReserveAndConfig = (contract:string, cTokenContract:string, var
 				"reserve-factor": Cl.uint(0.15*PERCENTAGE_FACTOR),
 				"borrow-cap": borrowCap,
 				"supply-cap": supplyCap,
-				"liquidation-fee": Cl.uint(0.1*PERCENTAGE_FACTOR)
+				"liquidation-fee": Cl.uint(0.1*PERCENTAGE_FACTOR),
+				"borrowable-in-isolation": Cl.bool(true),
+				"debt-ceiling": Cl.uint(0)
 			}),
 		],
 		contractDeployer
@@ -301,10 +312,10 @@ export const initReserveAndConfig = (contract:string, cTokenContract:string, var
 
 export const addPoolToApproved = ()=> {
 	[sBtcVariableDebtContract,
-		sBtcCTokenContract,
-		wUsdVariableDebtContract,
-		wUsdCTokenContract,
-		vaultContract
+	sBtcCTokenContract,
+	wUsdVariableDebtContract,
+	wUsdCTokenContract,
+	reserveContract
 	].map((contract)=> simnet.callPublicFn(
 		contract,
 		"add-approved-contract",
@@ -337,5 +348,42 @@ export const borrow = (contract:string, cTokenContract:string, variableDebtContr
 			Cl.principal(variableDebtContract) 
 		],
 		user
+	)
+}
+
+export const repay = (contract:string, cTokenContract:string, variableDebtContract:string, amount:UIntCV, user:string) => {
+	return simnet.callPublicFn(poolContract, "repay",[
+		Cl.principal(contract),
+		amount, 
+		Cl.principal(contract),
+		Cl.principal(cTokenContract),
+		Cl.principal(variableDebtContract),
+		Cl.bool(false) 
+		],
+		user
+	)
+}
+
+export const getReserve=(asset:string)=>{
+	return simnet.getMapEntry(
+		reserveContract,
+		"reserve-data",
+		Cl.tuple({ "asset": Cl.principal(asset) })
+	)
+}
+
+export const getUserHealthMetrics=(address:string)=>{
+	return simnet.callReadOnlyFn(poolContract, "get-user-health-metrics",[
+		Cl.principal(address),
+		],
+		address1
+	)
+}
+
+export const getUserBalance=(address:string, contract:string)=>{
+	return simnet.callReadOnlyFn(contract, "get-balance",[
+		Cl.principal(address),
+		],
+		address1
 	)
 }

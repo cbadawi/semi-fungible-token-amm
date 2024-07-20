@@ -1,13 +1,16 @@
 (use-trait ft-trait .trait-sip-010.sip-010-trait)
 
-(define-constant ERR-NOT-AUTHORIZED (err u2000))
-(define-constant ERR-NOT-AUTHORIZED-TOKEN (err u2001))
-(define-constant ERR-RESERVE-NOT-EXIST (err u2002))
-(define-constant ERR-CONFIG-NOT-SET (err u2007))
+(define-constant ERR-NOT-AUTHORIZED (err u1000))
+(define-constant ERR-NOT-AUTHORIZED-TOKEN (err u1001))
+(define-constant ERR-RESERVE-NOT-EXIST (err u1002))
+(define-constant ERR-RESERVE-ALREADY-INITIALIZED (err u1003))
+(define-constant ERR-CONFIG-NOT-SET (err u1007))
+(define-constant ERR-USER-NOT-SET (err u1008))
 
 (define-constant iterator-helper-list (list u0 u1 u2 u3 u4 u5 u6 u7 u8 u9 u10 u11 u12 u13 u14 u15 u16 u17 u18 u19))
 (define-constant DECIMALS u18)
 (define-constant UNIT (pow u10 DECIMALS))
+(define-constant BURN_ADDRESSS 'SP000000000000000000002Q6VF78)
 
 
 (define-map reserve-data { asset: principal } { 
@@ -24,7 +27,8 @@
 	accrued-to-treasury: uint,
 })
 
-(define-map reserves-map { id: uint } { address: principal })
+(define-map reserve-map { id: uint } { asset: principal })
+(define-map inverse-reserve-map { asset: principal } { id: uint })
 ;; having to update balance and debt in user-assets-balance because I cant loop through all traits for calculateUserAccountData : _getUserBalanceInBaseCurrency & _getUserDebtInBaseCurrency & : https://discord.com/channels/621759717756370964/713087894260023377/1233016424012709918
 ;; user-assets-balance keeps track of balances per pool used in the HF calculations, while get-user-account-data provides an overall overview.
 (define-map user-assets-balance {user: principal, asset: principal} { scaled-collateral-balance: uint, scaled-debt-balance: uint })
@@ -32,8 +36,7 @@
 
 
 ;; todo probably will have to be rewritten as a bitmap with 1 or 2 uint128s to save on gas
-;;  the configs commented out will not be used in the initial iteration v0
-;;  see contracts/protocol/pool/PoolConfigurator.sol
+;; see contracts/protocol/pool/PoolConfigurator.sol
 ;; contracts/protocol/libraries/types/DataTypes.sol#L38
 ;; contracts/protocol/libraries/configuration/ReserveConfiguration.sol
 (define-map reserve-config { asset: principal } {
@@ -44,19 +47,17 @@
 	is-active: bool,
 	is-frozen: bool,
 	is-borrowing-enabled: bool, ;; todo where is that used?
-	;; is-stable-rate-borrowing-enabled: bool,
 	is-paused: bool,
-	;; is-borrowing-in-isolation-mode-enabled: bool,
-	;; is-siloed-borrowing-enabled: bool,
-	;; is-flash-loan-enabled: bool,
 	reserve-factor: uint, ;; in bps. ex 10.01% is u1001
 	;; TODO why do borrow caps and supply caps need to be in whole tokens? save on gas and have them in decimal units to not have to multiplly by 10^decimals
 	borrow-cap:uint, ;; in whole tokens, do not include decimals. borrowCap == 0 => no cap ;; reduces insolvency risks
 	supply-cap:uint, ;; in whole tokens, do not include decimals.supplyCap == 0 => no cap
 	liquidation-fee: uint, ;; percentage
-	;; e-mode-category: uint,
-	;; debt-ceiling-in-isolation-mode: uint, ;; with (ReserveConfiguration::DEBT_CEILING_DECIMALS) decimals
+	borrowable-in-isolation: bool,
+	debt-ceiling: uint, ;; The total amount that can be borrowed against an isolated asset is capped 
 })
+
+(define-map user-config { user: principal } { isolated-asset: (optional principal), used-as-collateral: (list 20 bool), used-as-borrow: (list 20 bool)})
 
 ;;-------------------------------------------------------------------------------------
 ;;-------------------------------------- GETTERS --------------------------------------
@@ -75,24 +76,34 @@
 ))
 
 (define-read-only (get-reserve-principal (id uint))
-	(unwrap-panic (map-get? reserves-map {id: id}))
+	(unwrap-panic (map-get? reserve-map {id: id}))
+)
+
+(define-read-only (get-reserve-id (asset principal))
+	(unwrap-panic (map-get? inverse-reserve-map {asset: asset}))
 )
 
 (define-private (get-reserves-list-helper (id uint)) 
-	(get address (get-reserve-principal id))
+	(get asset (get-reserve-principal id))
 )
 
 (define-read-only (get-reserve-config (asset principal)) 
 	(ok (unwrap! (map-get? reserve-config {asset: asset}) ERR-CONFIG-NOT-SET))
 )
 
+(define-read-only (get-user-config (user principal)) 
+	(default-to  {isolated-asset: none, 
+										used-as-collateral: (list false false false false false false false false false false false false false false false false false false false false ),
+										used-as-borrow: (list false false false false false false false false false false false false false false false false false false false false )} 
+										(map-get? user-config {user: user})
+				)
+)
+
 ;; default to false and u0 if its the first supply)
 (define-read-only (get-user-assets-balance (asset principal) (who principal)) 
-	(ok (match (map-get? user-assets-balance {asset: asset, user: who})
-			user-assets
-			user-assets
-			{scaled-collateral-balance: u0, scaled-debt-balance: u0}
-)))
+	(default-to {scaled-collateral-balance: u0, scaled-debt-balance: u0}
+							 (map-get? user-assets-balance {asset: asset, user: who})		
+))
 ;;----------------------------------------------------------------------------------------
 ;;------------------------------------- SETTERS ------------------------------------------
 ;;----------------------------------------------------------------------------------------
@@ -106,8 +117,10 @@
 	(let ((reserve-id (var-get reserves-count))
 				) 
 		(asserts! (or (is-ok (check-is-approved)) (is-ok (check-is-owner))) ERR-NOT-AUTHORIZED)
+		(try! (match (map-get? inverse-reserve-map {asset: asset}) reserve ERR-RESERVE-ALREADY-INITIALIZED (ok u0)))
 		(var-set reserves-count (+ reserve-id u1))
-		(map-set reserves-map {id: reserve-id} {address: asset })
+		(map-insert reserve-map {id: reserve-id} {asset: asset })
+		(map-insert inverse-reserve-map {asset: asset } {id: reserve-id})
 		;; TODO defaults are my best guess
 		(ok (map-insert reserve-data {asset: asset} {
 			id:reserve-id,
@@ -129,15 +142,10 @@
 														)
 		(begin 
 			(asserts! (or (is-ok (check-is-approved)) (is-ok (check-is-owner))) ERR-NOT-AUTHORIZED)
+			(print {FUNCTION:"set-reserve", new-reserve:new-reserve})
 			(ok (map-set reserve-data { asset: asset } new-reserve))
 ))
 
-;; TODO what are the repercussions of dropping a reserve? what hapens to the funds?
-(define-public (drop-reserve) 
-	(begin 
-			(asserts! (or (is-ok (check-is-approved)) (is-ok (check-is-owner))) ERR-NOT-AUTHORIZED)
-			(ok true)
-))
 (define-public (set-reserve-interest-rate-strategy-principal (asset principal) (interest-rate-strategy-principal principal)) 
 	(begin 
 			(asserts! (or (is-ok (check-is-approved)) (is-ok (check-is-owner))) ERR-NOT-AUTHORIZED)
@@ -147,12 +155,16 @@
 				(ok (map-set reserve-data {asset: asset} (merge reserve {interest-rate-strategy-principal: interest-rate-strategy-principal}))) ;; todo shouldnt this be in config?
 )))
 ;; configuration
-(define-public (set-configuration (asset principal) (config (tuple (ltv uint) (liquidation-threshold uint) (liquidation-bonus uint) (decimals uint) (is-active bool) (is-frozen bool) (is-borrowing-enabled bool)  (is-paused bool) (reserve-factor uint) (borrow-cap uint) (supply-cap uint) (liquidation-fee uint))))
+(define-public (set-user-config (user principal) (config (tuple (isolated-asset (optional principal)) (used-as-collateral (list 20 bool)) (used-as-borrow (list 20 bool)))))
+	(begin 
+			(asserts! (or (is-ok (check-is-approved)) (is-ok (check-is-owner))) ERR-NOT-AUTHORIZED)
+			(ok (map-set user-config {user: user} config))
+))
+(define-public (set-configuration (asset principal) (config (tuple (ltv uint) (liquidation-threshold uint) (liquidation-bonus uint) (decimals uint) (is-active bool) (is-frozen bool) (is-borrowing-enabled bool)  (is-paused bool) (reserve-factor uint) (borrow-cap uint) (supply-cap uint) (liquidation-fee uint) (borrowable-in-isolation bool) (debt-ceiling uint))))
 	(begin 
 			(asserts! (or (is-ok (check-is-approved)) (is-ok (check-is-owner))) ERR-NOT-AUTHORIZED)
 			(ok (map-set reserve-config {asset: asset} config))
 ))
-
 (define-public (set-user-assets-balance (who principal) (asset principal) (new-balances (tuple (scaled-collateral-balance uint) (scaled-debt-balance uint)))) 
 	(begin 
 		(asserts! (or (is-ok (check-is-approved)) (is-ok (check-is-owner))) ERR-NOT-AUTHORIZED)
