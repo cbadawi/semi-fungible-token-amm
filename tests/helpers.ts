@@ -1,40 +1,22 @@
 import { Cl } from "@stacks/transactions"
-import {UIntCV} from "@stacks/transactions"
 
-export const ERR_NOT_AUTHORIZED = 1000
-export const ERR_TOO_MANY_OUTCOME_SLOTS = 2001
-export const ERR_TOO_FEW_OUTCOME_SLOTS = 2002
-export const ERR_CONDITION_ALREADY_PREPARED = 2003
-export const ERR_CONDITION_NOT_PREPARED = 2004
-export const ERR_WRONG_SLOTS_INPUT = 2005
-export const ERR_CONDITION_UNKNOWN = 2006
-export const ERR_TOO_FEW_PARTITIONS = 2007
-export const ERR_COLLECTIONID_NOT_FOUND = 2008
-export const ERR_CANT_SERIALIZE_COLLATERAL = 2009
-export const ERR_INDEX_SETS_NOT_VALID = 2010
-export const ERR_INDEX_SETS_NOT_DISJOINT = 2011
+// fpmm errors
+export const ERR_NOT_AUTHORIZED = 1000;
+export const ERR_POOL_ALREADY_EXISTS = 2000;
+export const ERR_INVALID_POOL = 2001;
+export const ERR_BLOCKLISTED = 2002;
+export const ERR_INVALID_LIQUIDITY = 2003;
+export const ERR_PERCENT_GREATER_THAN_ONE = 2004;
+export const ERR_EXCEEDS_MAX_SLIPPAGE = 2005;
+export const ERR_ORACLE_NOT_ENABLED = 2006;
+export const ERR_ORACLE_AVERAGE_BIGGER_THAN_ONE = 2007;
+export const ERR_PAUSED = 2008;
+export const ERR_SWITCH_THRESHOLD_BIGGER_THAN_ONE = 2009;
+export const ERR_NO_LIQUIDITY = 2010;
+export const ERR_MAX_IN_RATIO = 2011;
+export const ERR_MAX_OUT_RATIO = 2012;
 
 
-export const ERR_YOU_POOR=420
-// const ERR_NOT_AUTHORIZED = 2000;
-export const ERR_NOT_AUTHORIZED_TOKEN = 2001;
-export const ERR_RESERVE_NOT_EXIST = 2002;
-export const ERR_RESERVE_INACTIVE = 2003;
-export const ERR_RESERVE_PAUSED = 2004;
-export const ERR_RESERVE_FROZEN = 2005;
-export const ERR_BORROWING_NOT_ENABLED = 2006;
-export const ERR_CONFIG_NOT_SET = 2007;
-export const ERR_INVALID_AMOUNT = 2008;
-export const ERR_SUPPLY_CAP_EXCEEDED = 2009;
-export const ERR_BORROW_CAP_EXCEEDED = 2010;
-export const ERR_HEALTH_FACTOR_LESS_THAN_LIQUIDATION_THRESHOLD = 2011;
-export const ERR_BORROWING_DISABLED = 2012;
-export const ERR_NO_COLLATERAL_FOUND = 2013;
-export const ERR_LTV_INVALID = 2014;
-export const ERR_PERCENTAGE_INVALID = 2015;
-export const ERR_COLLATERAL_TOO_LOW = 2016;
-export const ERR_HEALTH_FACTOR_NOT_BELOW_THRESHOLD = 2017;
-export const ERR_NO_DEBT_FOUND = 2018;
 
 export const UNIT = 10**18;
 
@@ -70,319 +52,153 @@ export const address1 = accounts.get("wallet_1")! // ST1SJ3DTE5DN7X54YDH5D64R3BC
 export const address2 = accounts.get("wallet_2")! // ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG
 export const address3 = accounts.get("wallet_3")! 
 
-export const utilsContract = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.utils"
-
-
 export const contractDeployer = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM"
-export const collateralName0 = "sbtc"
-export const sbtcContract = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc"
-export const sBtcCTokenContract = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.sbtc-m-token"
-export const sBtcVariableDebtContract = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.variable-sbtc-debt-token"
-export const sBtcCollateralAmount = Cl.uint(10_000_000) // 0.1 btc
-export const sBtcBorrowAmount = Cl.uint(1_000_000) // 0.01 btc
-export const sBtcBorrowCap = Cl.uint(4)
-export const sBtcSupplyCap = Cl.uint(6)
+export const ammRegistryContract = contractDeployer + ".amm-registry"
+export const fpmmContract = contractDeployer + ".fpmm"
+export const ammVaultContract = contractDeployer + ".amm-vault"
+export const tokenAmmPoolContract = contractDeployer + ".token-amm-pool"
+export const authContract = contractDeployer + ".auth"
 
-export const collateralName1 = "wusd"
-export const wUsdContract = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.wusd"
-export const wUsdCTokenContract = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.wusd-m-token"
-export const wUsdVariableDebtContract = "ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM.variable-wusd-debt-token"
-export const wUsdCollateralAmount = Cl.uint(200_000_00000000) // 200k, 8 decimals
-export const wUsdBorrowAmount = Cl.uint(1_500_00000000) // 15k
-export const wUsdBorrowCap = Cl.uint(300_000) // 300k
-export const wUsdSupplyCap = Cl.uint(600_000)
+export const sip10Token = contractDeployer + ".wagmi"
+export const sip13Token = contractDeployer + ".semi-fungible-token"
 
 
-export const poolName = "pool"
-export const poolContract = contractDeployer + "." + poolName
-export const reserveName = "reserve-data"
-export const reserveContract = contractDeployer + "." + reserveName
-export const PERCENTAGE_FACTOR = 10000
-
-
-export const beforeSBTCSupply = ()=> {
-	// sbtc, supplied by user 1
-	simnet.callPublicFn(
-		sbtcContract,
-      "mint",
-      [sBtcCollateralAmount, Cl.principal(address1)],
-      contractDeployer
-    )
-		// approval for mints and burns
-		simnet.callPublicFn(
-			sBtcCTokenContract,
-			"add-approved-contract",
-			[Cl.principal(poolContract)],
-			contractDeployer
-		)
-		console.log("!!!!! called beforeSBTCSupply ", sbtcContract)
-
-		simnet.callPublicFn(
-      reserveContract,
-			"init-reserve",
-			[
-				Cl.principal(sbtcContract), 
-				Cl.principal(sbtcContract), 
-				Cl.principal(sBtcCTokenContract),
-				Cl.principal(sBtcVariableDebtContract),
-				Cl.principal(sBtcVariableDebtContract),
-			],
-      contractDeployer
-		)
-
-		simnet.callPublicFn(
-			reserveContract,
-			"set-configuration",
-			[
-				Cl.principal(sbtcContract),
-				Cl.tuple({
-					"ltv": Cl.uint(0.8*PERCENTAGE_FACTOR),
-					"liquidation-threshold": Cl.uint(0.85*PERCENTAGE_FACTOR),
-					"liquidation-bonus": Cl.uint(1.05*PERCENTAGE_FACTOR),
-					"decimals": Cl.uint(8), // 8 sats units in 1 btc
-					"is-active": Cl.bool(true),
-					"is-frozen": Cl.bool(false),
-					"is-borrowing-enabled": Cl.bool(true),
-					"is-paused": Cl.bool(false),
-					"reserve-factor": Cl.uint(0.15*PERCENTAGE_FACTOR),
-					"borrow-cap": sBtcBorrowCap,
-					"supply-cap": sBtcSupplyCap,
-					"liquidation-fee": Cl.uint(0.1*PERCENTAGE_FACTOR),
-					"borrowable-in-isolation": Cl.bool(true),
-					"debt-ceiling": Cl.uint(0),
-				}),
-			],
-			contractDeployer
-		)
-	}
-
-	export const beforeWUSDBorrow = ()=> { 
-	simnet.callPublicFn(
-		wUsdContract,
-      "mint",
-      [wUsdCollateralAmount, Cl.principal(address2)],
-      contractDeployer
-    )
-		simnet.callPublicFn(
-			wUsdVariableDebtContract,
-			"add-approved-contract",
-			[Cl.principal(poolContract)],
-			contractDeployer
-		)
-		simnet.callPublicFn(
-			wUsdCTokenContract,
-			"add-approved-contract",
-			[Cl.principal(poolContract)],
-			contractDeployer
-		)
-		simnet.callPublicFn(
-      reserveContract,
-			"init-reserve",
-			[
-				Cl.principal(wUsdContract), 
-				Cl.principal(wUsdContract), 
-				Cl.principal(wUsdCTokenContract),
-				Cl.principal(wUsdVariableDebtContract),
-				Cl.principal(wUsdVariableDebtContract),
-			],
-      contractDeployer
-		)
-
-		simnet.callPublicFn(
-			reserveContract,
-			"set-configuration",
-			[
-				Cl.principal(wUsdContract),
-				Cl.tuple({
-					"ltv": Cl.uint(0.9*PERCENTAGE_FACTOR),
-					"liquidation-threshold": Cl.uint(0.95*PERCENTAGE_FACTOR),
-					"liquidation-bonus": Cl.uint(1.02*PERCENTAGE_FACTOR),
-					"decimals": Cl.uint(8), // 8 sats units in 1 btc
-					"is-active": Cl.bool(true),
-					"is-frozen": Cl.bool(false),
-					"is-borrowing-enabled": Cl.bool(true),
-					"is-paused": Cl.bool(false),
-					"reserve-factor": Cl.uint(0.15*PERCENTAGE_FACTOR),
-					"borrow-cap": wUsdBorrowCap,
-					"supply-cap": wUsdSupplyCap,
-					"liquidation-fee": Cl.uint(0.1*PERCENTAGE_FACTOR),
-					"borrowable-in-isolation": Cl.bool(true),
-					"debt-ceiling": Cl.uint(0)
-				}),
-			],
-			contractDeployer
-		)
-		// setasset prices
-		const setassetprice1 = simnet.callPublicFn(poolContract, "set-asset-price", [
-			Cl.principal(sbtcContract), Cl.uint(61462_23000000)
-		], contractDeployer)
-		const setassetprice2 = simnet.callPublicFn(poolContract, "set-asset-price", [
-			Cl.principal(wUsdContract), Cl.uint(1_02000000)
-		], contractDeployer)
-
-
-		// supply here since we're not testing wusd supply call, only wusd borrow. for user2 to borrow, someone must have deposited wusd in the pool
-		simnet.callPublicFn(
-			poolContract,
-			"supply",
-			[
-				Cl.principal(wUsdContract), 
-				wUsdCollateralAmount, // 100k
-				Cl.principal(wUsdContract), 
-				Cl.principal(wUsdVariableDebtContract),
-				Cl.principal(wUsdCTokenContract),
-			], 
-			address2
-		)
+export const mintSFT = (tokenId=0, mintAmount=1000, recipient=address1) => {
+	const mintRespone = simnet.callPublicFn(
+		sip13Token,
+		"mint",
+		[
+			Cl.uint(tokenId),
+			Cl.uint(mintAmount),
+			Cl.principal(recipient)
+		],
+		contractDeployer
+	)
+return mintRespone
 }
 
-export const beforeSupply = (contract:string, variableDebtContract:string, cTokenContract:string, user:string, amount:UIntCV, borrowCap:UIntCV, supplyCap:UIntCV, assetPrice: UIntCV) => {
-	mint(contract, amount, user);
-	addPoolToApproved();
-	initReserveAndConfig(contract, cTokenContract, variableDebtContract, borrowCap, supplyCap)
-	setAssetPrice(contract, assetPrice)
+export const mintSip10 = (token=sip10Token, mintAmount=100000, recipient=address1) => {
+	const mintRespone = simnet.callPublicFn(
+		token,
+		"mint",
+		[
+			Cl.uint(mintAmount),
+			Cl.principal(recipient)
+		],
+		contractDeployer
+	)
+return mintRespone
 }
 
-export const initBorrowedReserveAndAddSupply = (contract:string, variableDebtContract:string, cTokenContract:string, user:string, amount:UIntCV, borrowCap:UIntCV, supplyCap:UIntCV, assetPrice:UIntCV) => {
-	if(user == address2) throw new Error("user can't be address2 ST2CY5V39NHDPWSXMW9QDT3HC3GD6Q6XX4CFRK9AG")
-	// supply more than what needs to be borrowd by a different user
-	const collateralAmountByUser2 = Cl.uint(Number(amount.value) * 5)
-	beforeSupply(contract, variableDebtContract, cTokenContract, address2, collateralAmountByUser2, borrowCap, supplyCap, assetPrice)
-	const usdSupplyResponse = supply(contract, collateralAmountByUser2, variableDebtContract, cTokenContract, address2);
-	// console.log("usdSupplyResponse", Cl.prettyPrint(usdSupplyResponse.result),prettyEvents(usdSupplyResponse.events))
-	setAssetPrice(contract, assetPrice)
-
-}
-
-export const supply = (contract:string, amount:UIntCV, variableDebtContract:string, cTokenContract:string, user:string)=> {
+export const addApproved = (address:string) => {
 	return simnet.callPublicFn(
-		poolContract,
-		"supply",
-		[
-			Cl.principal(contract), 
-			amount, 
-			Cl.principal(contract), 
-			Cl.principal(variableDebtContract),
-			Cl.principal(cTokenContract),
-		],
-		user
+		authContract,
+		"add-approved-contract",
+		[Cl.principal(address)],
+		contractDeployer
 	)
 }
 
-export const initReserveAndConfig = (contract:string, cTokenContract:string, variableDebtContract:string, borrowCap:UIntCV, supplyCap:UIntCV)=> {
-	const initReserveResp = simnet.callPublicFn(
-		reserveContract,
-		"init-reserve",
+export const createPool = (tokenX=sip10Token, tokenY=sip13Token, tokenYID=0)=> {
+	return simnet.callPublicFn(
+		ammRegistryContract,
+		"create-pool",
 		[
-			Cl.principal(contract), 
-			Cl.principal(contract), 
-			Cl.principal(cTokenContract),
-			Cl.principal(variableDebtContract),
-			Cl.principal(variableDebtContract),
+			Cl.principal(tokenX), 
+			Cl.principal(tokenY), 
+			Cl.uint(tokenYID),
 		],
 		contractDeployer
 	)
-	console.log("!!!!! called initReserveAndConfig ", contract, Cl.prettyPrint(initReserveResp.result))
+}
+
+export const initPool = (tokenXAmount:number, tokenYAmount:number, tokenX=sip10Token, tokenY=sip13Token, tokenYID=0)=> {
+	// mintSFT(0,tokenYAmount, contractDeployer)
+	// mintSip10(sip10Token,tokenXAmount,contractDeployer)
+
+	// simnet.callPublicFn(
+	// 	tokenX,
+	// 	"transfer",
+	// 	[
+	// 		Cl.uint(tokenXAmount),
+	// 		Cl.principal(contractDeployer),
+	// 		Cl.principal(ammVaultContract),
+	// 		Cl.none()
+	// 	],
+	// 	contractDeployer
+	// )
+	
+	// simnet.callPublicFn(
+	// 	tokenY,
+	// 	"transfer",
+	// 	[
+	// 		Cl.uint(tokenYID),
+	// 		Cl.uint(tokenYAmount),
+	// 		Cl.principal(contractDeployer),
+	// 		Cl.principal(ammVaultContract)
+	// 	],
+	// 	contractDeployer
+	// )
+	
+	const poolData = Cl.tuple({
+		"pool-id":Cl.uint(0), 
+		"total-supply":Cl.uint(0), 
+		"balance-x":Cl.uint(tokenXAmount), 
+		"balance-y":Cl.uint(tokenYAmount), 
+		"fee-rate-x":Cl.uint(0), 
+		"fee-rate-y":Cl.uint(0), 
+		"fee-rebate":Cl.uint(0), 
+		"start-block":Cl.uint(0), 
+		"end-block":Cl.uint(999999999), 
+		"threshold-x":Cl.uint(0), 
+		"threshold-y":Cl.uint(0), 
+		"max-in-ratio":Cl.uint(80000000), 
+		"max-out-ratio":Cl.uint(80000000)
+	})
 
 	simnet.callPublicFn(
-		reserveContract,
-		"set-configuration",
+		ammVaultContract,
+		"set-approved-token",
 		[
-			Cl.principal(contract),
-			Cl.tuple({
-				"ltv": Cl.uint(0.8*PERCENTAGE_FACTOR),
-				"liquidation-threshold": Cl.uint(0.85*PERCENTAGE_FACTOR),
-				"liquidation-bonus": Cl.uint(1.05*PERCENTAGE_FACTOR),
-				"decimals": Cl.uint(8), // 8 sats units in 1 btc
-				"is-active": Cl.bool(true),
-				"is-frozen": Cl.bool(false),
-				"is-borrowing-enabled": Cl.bool(true),
-				"is-paused": Cl.bool(false),
-				"reserve-factor": Cl.uint(0.15*PERCENTAGE_FACTOR),
-				"borrow-cap": borrowCap,
-				"supply-cap": supplyCap,
-				"liquidation-fee": Cl.uint(0.1*PERCENTAGE_FACTOR),
-				"borrowable-in-isolation": Cl.bool(true),
-				"debt-ceiling": Cl.uint(0)
-			}),
+			Cl.principal(tokenX), 
+			Cl.bool(true)
+		],
+		contractDeployer
+	)
+
+	simnet.callPublicFn(
+		ammVaultContract,
+		"set-approved-token",
+		[
+			Cl.principal(tokenY), 
+			Cl.bool(true)
+		],
+		contractDeployer
+	)
+	
+	return simnet.callPublicFn(
+		ammRegistryContract,
+		"update-pool",
+		[
+			Cl.principal(tokenX), 
+			Cl.principal(tokenY), 
+			Cl.uint(tokenYID),
+			poolData
 		],
 		contractDeployer
 	)
 }
 
-export const addPoolToApproved = ()=> {
-	[sBtcVariableDebtContract,
-	sBtcCTokenContract,
-	wUsdVariableDebtContract,
-	wUsdCTokenContract,
-	reserveContract
-	].map((contract)=> simnet.callPublicFn(
-		contract,
-		"add-approved-contract",
-		[Cl.principal(poolContract)],
-		contractDeployer
-	))
-}
-
-export const setAssetPrice= (asset:string, price:UIntCV) => {
-	return  simnet.callPublicFn(poolContract, "set-asset-price", [
-		Cl.principal(asset), price
-	], contractDeployer)
-}
-
-export const mint = (contract:string, amount:UIntCV, user:string)=> {
-	return  simnet.callPublicFn(
-		contract,
-      "mint",
-      [amount, Cl.principal(user)],
-      contractDeployer
-    )
-}
-
-export const borrow = (contract:string, cTokenContract:string, variableDebtContract:string, amount:UIntCV, user:string) => {
-	return simnet.callPublicFn(poolContract, "borrow",[
-			Cl.principal(contract),
-			amount,
-			Cl.principal(contract),
-			Cl.principal(cTokenContract),
-			Cl.principal(variableDebtContract) 
-		],
-		user
-	)
-}
-
-export const repay = (contract:string, cTokenContract:string, variableDebtContract:string, amount:UIntCV, user:string) => {
-	return simnet.callPublicFn(poolContract, "repay",[
-		Cl.principal(contract),
-		amount, 
-		Cl.principal(contract),
-		Cl.principal(cTokenContract),
-		Cl.principal(variableDebtContract),
-		Cl.bool(false) 
-		],
-		user
-	)
-}
-
-export const getReserve=(asset:string)=>{
-	return simnet.getMapEntry(
-		reserveContract,
-		"reserve-data",
-		Cl.tuple({ "asset": Cl.principal(asset) })
-	)
-}
-
-export const getUserHealthMetrics=(address:string)=>{
-	return simnet.callReadOnlyFn(poolContract, "get-user-health-metrics",[
-		Cl.principal(address),
-		],
-		address1
-	)
-}
-
-export const getUserBalance=(address:string, contract:string)=>{
-	return simnet.callReadOnlyFn(contract, "get-balance",[
-		Cl.principal(address),
+export const addToPos = (tokenYID:number, dX:number, maxDy:number) => {
+	return simnet.callPublicFn(
+		fpmmContract,
+		"add-to-position-10-13",
+		[
+			Cl.principal(sip10Token), 
+			Cl.principal(sip13Token), 
+			Cl.uint(tokenYID),
+			Cl.uint(dX),
+			Cl.some(Cl.uint(maxDy)),
 		],
 		address1
 	)

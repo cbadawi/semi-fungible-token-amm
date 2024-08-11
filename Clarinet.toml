@@ -22,75 +22,60 @@ check_checker = { trusted_sender = false, trusted_caller = false, callee_filter 
 # More informations: https://www.hiro.so/blog/new-safety-checks-in-clarinet
 
 # Contracts
-[contracts.pool]
-path = "contracts/pool.clar"
-clarity_version = 2
-epoch = "2.1"
 
-[contracts.reserve-data]
-path = "contracts/reserve-data.clar"
+[contracts.amm-registry]
+path = 'contracts/amm-registry.clar'
 clarity_version = 2
-epoch = "2.1"
+epoch = 2.4
 
-[contracts.utils]
-path = "contracts/utils.clar"
+[contracts.amm-vault]
+path = 'contracts/amm-vault.clar'
 clarity_version = 2
-epoch = "2.1"
+epoch = 2.4
 
-# Traits
-[contracts.trait-sip-010]
-path = "contracts/traits/trait-sip-010.clar"
+[contracts.auth]
+path = 'contracts/auth.clar'
 clarity_version = 2
-epoch = "2.1"
+epoch = 2.4
 
-[contracts.trait-ownable]
-path = "contracts/traits/trait-ownable.clar"
+[contracts.fpmm]
+path = 'contracts/fpmm.clar'
 clarity_version = 2
-epoch = "2.1"
+epoch = 2.4
 
-[contracts.trait-m-token]
-path = "contracts/traits/trait-m-token.clar"
+[contracts.semi-fungible-token]
+path = 'contracts/tokens/semi-fungible-token.clar'
 clarity_version = 2
-epoch = "2.1"
+epoch = 2.4
 
-[contracts.trait-variable-debt-token]
-path = "contracts/traits/trait-variable-debt-token.clar"
+[contracts.wagmi]
+path = 'contracts/tokens/wagmi.clar'
 clarity_version = 2
-epoch = "2.1"
+epoch = 2.4
 
-# Tokens
-[contracts.sbtc]
-path = "contracts/tokens/sbtc.clar"
+[contracts.sip-010-trait]
+path = 'contracts/traits/sip-010-trait.clar'
 clarity_version = 2
-epoch = "2.1"
-depends_on = [ "trait-ownable", "trait-sip-010" ]
+epoch = 2.4
 
-[contracts.variable-sbtc-debt-token]
-path = "contracts/tokens/variable-sbtc-debt-token.clar"
+[contracts.trait-flash-loan-user]
+path = 'contracts/traits/trait-flash-loan-user.clar'
 clarity_version = 2
-epoch = "2.1"
-depends_on = [ "trait-ownable", "trait-m-token" ]
+epoch = 2.4
 
-[contracts.sbtc-m-token]
-path = "contracts/tokens/sbtc-m-token.clar"
-clarity_version = 2
-epoch = "2.1"
-depends_on = [ "trait-ownable", "trait-sip-010", "trait-m-token" ]
 
-[contracts.wusd]
-path = "contracts/tokens/wusd.clar"
+[contracts.sip013-semi-fungible-token-trait]
+path = 'contracts/traits/sip013-semi-fungible-token-trait.clar'
 clarity_version = 2
-epoch = "2.1"
-depends_on = [ "trait-ownable", "trait-sip-010" ]
+epoch = 2.4
 
-[contracts.variable-wusd-debt-token]
-path = "contracts/tokens/variable-wusd-debt-token.clar"
+[contracts.sip013-transfer-many-trait]
+path = 'contracts/traits/sip013-transfer-many-trait.clar'
 clarity_version = 2
-epoch = "2.1"
-depends_on = [ "trait-ownable", "trait-m-token" ]
+epoch = 2.4
 
-[contracts.wusd-m-token]
-path = "contracts/tokens/wusd-m-token.clar"
+[contracts.token-amm-pool]
+path = 'contracts/token-amm-pool.clar'
 clarity_version = 2
-epoch = "2.1"
-depends_on = [ "trait-ownable", "trait-sip-010", "trait-m-token" ]
+epoch = 2.4
+

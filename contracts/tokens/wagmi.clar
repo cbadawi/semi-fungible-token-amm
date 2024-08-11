@@ -1,8 +1,6 @@
-(impl-trait .trait-ownable.ownable-trait)
-(impl-trait .trait-sip-010.sip-010-trait)
+(impl-trait .sip-010-trait.sip-010-trait)
 
-
-(define-fungible-token wusd)
+(define-fungible-token wagmi)
 
 (define-data-var token-uri (string-utf8 256) u"")
 (define-data-var contract-owner principal tx-sender)
@@ -52,19 +50,19 @@
 ;; @desc get-total-supply
 ;; @returns (response uint)
 (define-read-only (get-total-supply)
-  (ok (ft-get-supply wusd))
+  (ok (ft-get-supply wagmi))
 )
 
 ;; @desc get-name
 ;; @returns (response string-utf8)
 (define-read-only (get-name)
-  (ok "wusd")
+  (ok "wagmi")
 )
 
 ;; @desc get-symbol
 ;; @returns (response string-utf8)
 (define-read-only (get-symbol)
-  (ok "wusd")
+  (ok "wagmi")
 )
 
 ;; @desc get-decimals
@@ -78,7 +76,7 @@
 ;; @params who
 ;; @returns (response uint)
 (define-read-only (get-balance (account principal))
-  (ok (ft-get-balance wusd account))
+  (ok (ft-get-balance wagmi account))
 )
 
 ;; @desc set-token-uri
@@ -109,7 +107,7 @@
 (define-public (transfer (amount uint) (sender principal) (recipient principal) (memo (optional (buff 34))))
   (begin
     (asserts! (is-eq sender tx-sender) ERR-NOT-AUTHORIZED)
-    (match (ft-transfer? wusd amount sender recipient)
+    (match (ft-transfer? wagmi amount sender recipient)
       response (begin
         (print memo)
         (ok response)
@@ -128,7 +126,7 @@
 (define-public (mint (amount uint) (recipient principal))
   (begin
     (try! (check-is-approved tx-sender))
-    (ft-mint? wusd amount recipient)
+    (ft-mint? wagmi amount recipient)
   )
 )
 
@@ -141,7 +139,7 @@
 (define-public (burn (amount uint) (sender principal))
   (begin
     (try! (check-is-approved tx-sender))
-    (ft-burn? wusd amount sender)
+    (ft-burn? wagmi amount sender)
   )
 )
 
@@ -171,7 +169,7 @@
 ;; @params token-id
 ;; @returns (response uint)
 (define-read-only (get-total-supply-fixed)
-  (ok (decimals-to-fixed (ft-get-supply wusd)))
+  (ok (decimals-to-fixed (ft-get-supply wagmi)))
 )
 
 ;; @desc get-balance-fixed
@@ -179,7 +177,7 @@
 ;; @params who
 ;; @returns (response uint)
 (define-read-only (get-balance-fixed (account principal))
-  (ok (decimals-to-fixed (ft-get-balance wusd account)))
+  (ok (decimals-to-fixed (ft-get-balance wagmi account)))
 )
 
 ;; @desc transfer-fixed
